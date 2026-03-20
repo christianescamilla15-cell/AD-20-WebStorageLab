@@ -1,0 +1,270 @@
+================================================================
+  AD-20: Pruebas Unitarias con Jest - Explicacion paso a paso
+================================================================
+
+OBJETIVO DEL LABORATORIO:
+Escribir pruebas unitarias con Jest para funciones de una
+calculadora y un controlador de usuarios. Practicar TDD
+(Test-Driven Development) corrigiendo codigo basado en pruebas.
+
+
+================================================================
+ESTRUCTURA DEL PROYECTO
+================================================================
+
+ad-l11-1.0/
+  js/
+    calculator/
+      calculator.js           --> Funciones: add, subtract, divide, multiply
+      calculator.test.js      --> Pruebas unitarias de la calculadora
+    user/
+      user.js                 --> Clase User (id, name, email)
+      user-controller.js      --> Clase UserController (add, remove, findByEmail, findById)
+      user-controller.test.js --> Pruebas unitarias del controlador de usuarios
+    jest.config.js            --> Configuracion de Jest
+    package.json              --> Dependencias (jest)
+
+
+================================================================
+CONCEPTOS CLAVE
+================================================================
+
+QUE ES UNA PRUEBA UNITARIA:
+  Una prueba que verifica que UNA funcion especifica hace lo que
+  debe hacer. Se prueba en aislamiento, sin depender de otras partes.
+
+JEST:
+  Framework de testing para JavaScript. Se instala con npm i jest.
+  Archivo de prueba: nombre.test.js (Jest los detecta automaticamente).
+
+ESTRUCTURA DE UNA PRUEBA:
+  test('descripcion de lo que se prueba', () => {
+      expect(valorObtenido).toBe(valorEsperado);
+  });
+
+MATCHERS USADOS:
+  .toBe(valor)          --> Igualdad exacta (===)
+  .toContain(elemento)  --> Array contiene el elemento
+  .toBeUndefined()      --> El valor es undefined
+  .not.toContain()      --> Array NO contiene el elemento
+
+
+================================================================
+TAREA 1: Pruebas para divide() y multiply()
+================================================================
+
+PASO 1 — Exportar las funciones
+
+PROBLEMA: divide() y multiply() existen en calculator.js pero NO
+estan exportadas. Sin exportarlas, las pruebas no pueden acceder
+a ellas.
+
+ANTES:
+  module.exports = {add: add, subtract: subtract};
+
+DESPUES:
+  module.exports = {add: add, subtract: subtract, divide: divide, multiply: multiply};
+
+PASO 2 — Escribir 2 pruebas para divide()
+
+  test('divide 10 / 2 to equal 5', () => {
+    expect(calculator.divide(10, 2)).toBe(5);
+  });
+
+  test('divide 9 / 3 to equal 3', () => {
+    expect(calculator.divide(9, 3)).toBe(3);
+  });
+
+EXPLICACION:
+  1. calculator.divide(10, 2) llama a la funcion con a=10, b=2
+  2. La funcion retorna 10 / 2 = 5
+  3. expect(...).toBe(5) verifica que el resultado sea exactamente 5
+  4. Si coincide: prueba PASA. Si no: prueba FALLA.
+
+PASO 3 — Escribir 2 pruebas para multiply()
+
+  test('multiply 3 * 4 to equal 12', () => {
+    expect(calculator.multiply(3, 4)).toBe(12);
+  });
+
+  test('multiply -2 * 5 to equal -10', () => {
+    expect(calculator.multiply(-2, 5)).toBe(-10);
+  });
+
+EXPLICACION:
+  - Primera prueba: caso normal (positivo * positivo)
+  - Segunda prueba: caso con numero negativo (-2 * 5 = -10)
+  - Es buena practica probar con diferentes tipos de valores
+
+
+================================================================
+TAREA 2: Pruebas para UserController
+================================================================
+
+CONTEXTO:
+  - User: clase con constructor(id, name, email) y metodos getId(), getName(), getEmail()
+  - UserController: maneja una lista de usuarios con add(), remove(), findByEmail(), findById()
+
+PASO 1 — Prueba add() con usuario que NO esta en la lista
+
+  test('add user that is not already in the list', () => {
+    let controller = new UserController();
+    let user = new User(5555, "Maria", "maria@generation.org");
+    expect(controller.getUsers()).not.toContain(user);  // verificar que NO esta
+    controller.add(user);                                // agregarlo
+    expect(controller.getUsers()).toContain(user);       // verificar que SI esta
+  });
+
+EXPLICACION:
+  1. Creamos un controller nuevo (lista vacia)
+  2. Creamos un usuario nuevo
+  3. Verificamos que NO esta en la lista (.not.toContain)
+  4. Lo agregamos con add()
+  5. Verificamos que ahora SI esta en la lista (.toContain)
+
+PASO 2 — Prueba remove() con usuario que NO esta en la lista
+
+  test('remove user that is not in the list does not affect the list', () => {
+    let controller = new UserController();
+    let user1 = new User(1111, "Carlos", "carlos@generation.org");
+    let user2 = new User(2222, "Ana", "ana@generation.org");
+    controller.add(user1);
+    controller.remove(user2);      // user2 nunca fue agregado
+    expect(controller.getUsers().length).toBe(1);       // la lista sigue con 1
+    expect(controller.getUsers()).toContain(user1);      // user1 sigue ahi
+  });
+
+EXPLICACION:
+  1. Agregamos user1 a la lista
+  2. Intentamos remover user2 (que nunca fue agregado)
+  3. Verificamos que la lista sigue teniendo 1 elemento
+  4. Verificamos que user1 no fue afectado
+  - Esto prueba que remove() no rompe la lista si el usuario no existe
+
+PASO 3 — 2 pruebas para findByEmail()
+
+  test('findByEmail returns the correct user', () => {
+    let controller = new UserController();
+    let user = new User(3333, "Pedro", "pedro@generation.org");
+    controller.add(user);
+    expect(controller.findByEmail("pedro@generation.org")).toBe(user);
+  });
+
+  test('findByEmail returns undefined when email not found', () => {
+    let controller = new UserController();
+    let user = new User(3333, "Pedro", "pedro@generation.org");
+    controller.add(user);
+    expect(controller.findByEmail("noexiste@generation.org")).toBeUndefined();
+  });
+
+EXPLICACION:
+  - Primera prueba: busca un email que SI existe → retorna el usuario correcto
+  - Segunda prueba: busca un email que NO existe → retorna undefined
+  - findByEmail() recorre el array con un for y compara email === email
+  - Si no encuentra coincidencia, la funcion no retorna nada (undefined)
+
+PASO 4 — 2 pruebas para findById()
+
+  test('findById returns the correct user', () => {
+    let controller = new UserController();
+    let user = new User(4444, "Laura", "laura@generation.org");
+    controller.add(user);
+    expect(controller.findById(4444)).toBe(user);
+  });
+
+  test('findById returns undefined when id not found', () => {
+    let controller = new UserController();
+    let user = new User(4444, "Laura", "laura@generation.org");
+    controller.add(user);
+    expect(controller.findById(9999)).toBeUndefined();
+  });
+
+EXPLICACION:
+  - Misma logica que findByEmail pero busca por id en vez de email
+  - Primera prueba: id 4444 existe → retorna el usuario
+  - Segunda prueba: id 9999 no existe → retorna undefined
+
+
+================================================================
+TAREA 3: TDD — Division por cero
+================================================================
+
+QUE ES TDD (Test-Driven Development):
+  1. PRIMERO escribes la prueba (que va a fallar)
+  2. DESPUES escribes/corriges el codigo para que pase
+  3. El test guia el desarrollo
+
+PASO 1 — Escribir la prueba ANTES de corregir el codigo
+
+  test('divide 10 / 0 should return "Cannot divide by zero"', () => {
+    expect(calculator.divide(10, 0)).toBe("Cannot divide by zero");
+  });
+
+  Si corremos esta prueba AHORA, FALLA porque:
+  - divide(10, 0) retorna Infinity (JavaScript no lanza error al dividir por 0)
+  - Pero esperamos el string "Cannot divide by zero"
+
+PASO 2 — Corregir divide() para que la prueba PASE
+
+ANTES:
+  function divide(a, b){
+    return a / b;
+  }
+
+DESPUES:
+  function divide(a, b){
+    if (b === 0) return "Cannot divide by zero";
+    return a / b;
+  }
+
+EXPLICACION:
+  1. Antes de dividir, verificamos si b es 0
+  2. Si b === 0, retornamos el mensaje de error en vez de dividir
+  3. Si b no es 0, dividimos normalmente
+  4. Ahora la prueba PASA porque divide(10, 0) retorna "Cannot divide by zero"
+
+FLUJO TDD:
+  Prueba escrita → Prueba FALLA (RED)
+  Codigo corregido → Prueba PASA (GREEN)
+  Refactorizar si es necesario (REFACTOR)
+
+
+================================================================
+RESUMEN DE TODAS LAS PRUEBAS (17 total)
+================================================================
+
+calculator.test.js (9 pruebas):
+  1. add(1, 2) = 3                    [existente]
+  2. add(-4, 8) = 4                   [existente]
+  3. subtract(5, 4) = 1               [existente]
+  4. subtract(-5, -10) = 5            [existente]
+  5. divide(10, 2) = 5                [Tarea 1]
+  6. divide(9, 3) = 3                 [Tarea 1]
+  7. multiply(3, 4) = 12              [Tarea 1]
+  8. multiply(-2, 5) = -10            [Tarea 1]
+  9. divide(10, 0) = "Cannot..."      [Tarea 3 - TDD]
+
+user-controller.test.js (8 pruebas):
+  1. add user to list                 [existente]
+  2. remove user from list            [existente]
+  3. add user not in list             [Tarea 2]
+  4. remove user not in list          [Tarea 2]
+  5. findByEmail - encontrado         [Tarea 2]
+  6. findByEmail - no encontrado      [Tarea 2]
+  7. findById - encontrado            [Tarea 2]
+  8. findById - no encontrado         [Tarea 2]
+
+
+================================================================
+COMO EJECUTAR LAS PRUEBAS
+================================================================
+
+1. Abrir terminal en la carpeta js/
+2. npm i jest        (instala Jest)
+3. npm test          (ejecuta todas las pruebas)
+
+Resultado esperado:
+  PASS calculator/calculator.test.js
+  PASS user/user-controller.test.js
+  Test Suites: 2 passed, 2 total
+  Tests:       17 passed, 17 total
